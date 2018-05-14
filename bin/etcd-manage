@@ -18,6 +18,17 @@ start() {
     -discovery ${DISCOVERY}
 }
 
+bootstrapDiscovery() {
+  #generate local uuid for etcd bootstrap
+  local uuid=$(uuidgen)
+  local bootstrap=localhost
+
+  # write it locally to this etcd bootstrap node
+  curl -sL -X PUT --fail -d value=3 ${bootstrap}:4001/v2/keys/discovery/${uuid}/_config/size
+  # write the uuid value to consul under the bootstrap/uuid kv
+  curl -sL -X PUT --fail -d ${uuid} http://${CONSUL}:8500/v1/kv/discovery
+}
+
 bootstrap() {
   preStart
   /usr/local/bin/etcd \

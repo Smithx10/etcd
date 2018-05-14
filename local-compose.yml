@@ -1,36 +1,49 @@
 version: '2.1'
 services:
-
   etcd:
-    image: autopilotpattern/etcd
+    image: smithx10/etcd:latest
     mem_limit: 128m
     ports:
       - 4001
       - 2379
       - 2380
     links:
-      - bootstrap:bootstrap
+      - consul:consul
     restart: always
+    network_mode: bridge
     environment:
-      - DISCOVERY
+      - CONSUL=consul
+      - CONSUL_AGENT=1
     command: >-
-      /usr/local/bin/etcd-manage start
+      /usr/local/bin/containerpilot
 
-  bootstrap:
-    image: autopilotpattern/etcd
+  etcd-bootstrap:
+    image: smithx10/etcd:latest
     mem_limit: 128m
     ports:
       - 4001:4001
       - 2379:2379
       - 2380:2380
+    environment:
+      - CONSUL=consul
+      - CONSUL_AGENT=1
+      - ETCD_BOOTSTRAP=1
+    network_mode: bridge
     hostname: bootstrap
+    links:
+      - consul:consul
     command: >-
-      /usr/local/bin/etcd
-      -name bootstrap
-      -advertise-client-urls http://bootstrap:2379,http://bootstrap:4001
-      -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
-      -initial-advertise-peer-urls http://bootstrap:2380
-      -listen-peer-urls http://0.0.0.0:2380
-      -initial-cluster-token etcd-cluster-1
-      -initial-cluster bootstrap=http://bootstrap:2380
-      -initial-cluster-state new
+      /usr/local/bin/containerpilot
+
+  consul:
+    image: autopilotpattern/consul:${TAG:-latest}
+    command: >
+       /usr/local/bin/containerpilot
+    restart: always
+    mem_limit: 128m
+    ports:
+      - 8500:8500
+    network_mode: bridge
+    environment:
+      - CONSUL=consul
+      - CONSUL_DEV=1
